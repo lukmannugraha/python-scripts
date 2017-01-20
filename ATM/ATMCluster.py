@@ -1,35 +1,27 @@
 #!/usr/bin/python
 #---------------------------------------
-# ATMCluster.py
+# ATMAll.py
 # (c) Jansen A. Simanullang, 01.08.2016
-# 18/19/20.08.2016
+# 11.08.2016 15:38
 # 20.08.2016 16:04
-# 14.09.2016 penambahan OFF di atas 6 jam
 # 10.12.2016 geser dari 26 ke 29
-# 20.01.2017 geser dari 29 ke 30
+# 13.12.2016 tambah OFF6
+# 20.01.2017 tambah PINGOK
 #---------------------------------------
-# usage: python ATMCluster.py
+# usage: python ATMAll.py
 #---------------------------------------
 from BeautifulSoup import BeautifulSoup
 import os, requests, time, urlparse, sys
 import urllib2, pdfkit, xlwt, xlutils
 from operator import itemgetter
 from xlwt import *
+
 #---------------------------------------
 # CONFIGURABLE PARAMETER
 #---------------------------------------
 RegionName = 'JAKARTA III'
 #---------------------------------------
 scriptDirectory = os.path.dirname(os.path.abspath(__file__)) + os.sep
-clusterNamesFile = scriptDirectory + "conf/clusterNames.csv"
-clusterMapsFile = scriptDirectory + "conf/clusterBranches.csv"
-clusterType = "CLUSTER"
-#---------------------------------------
-# WARNING!!!
-# the order of cluster names must match
-# the order of the sorted table
-#---------------------------------------
-
 
 def welcomeScreen():
 
@@ -39,76 +31,6 @@ def welcomeScreen():
 		os.system("cls")
 
 	print "TABULAR ATM PROBLEM, UTILITY & AVAILABILITY \n\n\n"
-
-
-
-def readClusterMaps(branchCode):
-
-	fName = clusterMapsFile
-
-	arrPICs = [""]
-	CNumber = 0
-
-	f = open(fName)
-
-	for baris in f.readlines():
-
-		col = baris.strip().split(",")
-			
-		if col[1].strip() == branchCode:
-
-			CNumber=col[0]
-				
-	f.close()
-
-	return CNumber
-
-
-def readClusterName(CNumber):
-
-	fName = clusterNamesFile
-	arrPICs = [""]
-	CName = 0
-
-	f = open(fName)
-	for baris in f.readlines():
-		col = baris.strip().split(",")
-		if col[0] == CNumber:		
-			CName = col[1]		
-	f.close()
-
-	return CName
-
-
-def readClusterNames():
-
-	fName = clusterNamesFile
-	arrClusterNames = []
-	clusterName = ""
-
-	f = open(fName)
-	for baris in f.readlines():
-		col = baris.strip().split(",")
-		clusterName = col[1]
-		arrClusterNames.append(clusterName)		
-	f.close()
-
-	return arrClusterNames
-
-def readClusterNumbers():
-
-	fName = clusterNamesFile
-	arrCNumber = []
-	cNumber = 0
-
-	f = open(fName)
-	for baris in f.readlines():
-		col = baris.strip().split(",")
-		cNumber = col[0]
-		arrCNumber.append(cNumber)		
-	f.close()
-
-	return arrCNumber
 
 
 def fetchHTML(alamatURL):
@@ -333,16 +255,18 @@ def getTableContents(table):
 	TProblem = []
 
 	# RANKING PROBLEM ATM
-	#print "\n# RANKING PROBLEM ATM\n"
+	print "\n# RANKING PROBLEM ATM\n"
 
 	for i in range (2, numRows-1):
 
 		trs = BeautifulSoup(str(rows[i]))
+	
 		tdcells = trs.findAll("td")
 		#print len(tdcells)
 		kodeCabang = tdcells[1].getText()
-		CNumber = readClusterMaps(kodeCabang)
+
 		dText = tdcells[2].getText()
+
 		namaCabang = cleanupNamaUker(dText.upper())
 		#---------------------------------------
 		textNOPG = tdcells[4].getText()
@@ -398,6 +322,7 @@ def getTableContents(table):
 			OFF = 0
 			#print "OFF NIHIL"
 		#---------------------------------------
+
 		textOF6 = tdcells[14].getText()
 		if textOF6:
 			OF6 = int(tdcells[14].getText()) 
@@ -405,23 +330,37 @@ def getTableContents(table):
 			OF6 = 0
 			#print "OFF NIHIL"
 		#---------------------------------------
-		PROB = NOP + RSK + PROBOPS + OOS + OFF + OF6
+		
+		textPINGOK = tdcells[15].getText()
+		if textPINGOK:
+			PINGOK = int(tdcells[15].getText()) 
+		else:			
+			PINGOK = 0
+			#print "OFF NIHIL"
+		#---------------------------------------
+		PROB = NOP + RSK + PROBOPS + OOS + OFF + OF6 + PINGOK
 
 		#print kodeCabang, namaCabang, NOP, RSK, PROBOPS, OOS, OFF, PROB
-		TProblem.append((kodeCabang, namaCabang, NOP, RSK, PROBOPS, OOS, OFF, OF6, PROB, CNumber))
-		TProblem = sorted(TProblem, key=itemgetter(9, 8, 1), reverse = False)
+
+		TProblem.append((kodeCabang, namaCabang, NOP, RSK, PROBOPS, OOS, OFF, OF6, PINGOK, PROB))
+
+		TProblem = sorted(TProblem, key=itemgetter(8, 1), reverse = False)
 
 
 	# RANKING UTILITY ATM
-	#print "\n# RANKING UTILITY ATM\n"
+	print "\n# RANKING UTILITY ATM\n"
 	TUtility = []
 
 	for i in range (2, numRows-1):
+
 		trs = BeautifulSoup(str(rows[i]))
+	
 		tdcells = trs.findAll("td")
+
 		kodeCabang = tdcells[1].getText()
-		CNumber = readClusterMaps(kodeCabang)
+
 		dText = tdcells[2].getText()
+
 		namaCabang = cleanupNamaUker(dText.upper())
 		#---------------------------------------
 		textUP = tdcells[9].getText()
@@ -445,21 +384,24 @@ def getTableContents(table):
 		PERCENT = float(TUNAI/float(UP)*100)
 		#print "{0:.0f}".format(PERCENT), NONTUNAI, ATM 
 
-		TUtility.append((kodeCabang, namaCabang, UP, TUNAI, NONTUNAI, float("{0:.2}".format(PERCENT)),CNumber))
-		TUtility = sorted(TUtility, key=itemgetter(6, 5, 1), reverse = False)
+		TUtility.append((kodeCabang, namaCabang, UP, TUNAI, NONTUNAI, float("{0:.2}".format(PERCENT))))
+		TUtility = sorted(TUtility, key=itemgetter(5, 1), reverse = True)
 
 
 	# RANKING AVAILABILITY ATM
-	#print "\n# RANKING AVAILABILITY ATM\n"
+	print "\n# RANKING AVAILABILITY ATM\n"
 	TAvailability = []
 
 	for i in range (2, numRows-1):
 
-		trs = BeautifulSoup(str(rows[i]))	
+		trs = BeautifulSoup(str(rows[i]))
+	
 		tdcells = trs.findAll("td")
+
 		kodeCabang = tdcells[1].getText()
-		CNumber = readClusterMaps(kodeCabang)
+
 		dText = tdcells[2].getText()
+
 		namaCabang = cleanupNamaUker(dText.upper())
 		#---------------------------------------
 		textATM = tdcells[3].getText()
@@ -474,10 +416,12 @@ def getTableContents(table):
 		else:			
 			AVAIL = 0
 		#---------------------------------------
+
+
 		#print kodeCabang, namaCabang, AVAIL
 
-		TAvailability.append((kodeCabang, namaCabang, ATM, AVAIL, CNumber))
-		TAvailability = sorted(TAvailability, key=itemgetter(4, 3, 2, 1), reverse = False)
+		TAvailability.append((kodeCabang, namaCabang, ATM, AVAIL))
+		TAvailability = sorted(TAvailability, key=itemgetter(3, 2, 1), reverse = True)
 
 		#print TAvailability
 
@@ -618,6 +562,7 @@ def colorUtility(percentTunai):
 
 	return strColor
 
+
 def prepareDirectory(strOutputDir):
 	# siapkan struktur direktori untuk penyimpanan data
 	# struktur direktori adalah ['OUTPUT', 'EDC', '2015', '04-APR', 'DAY-28'] makes './OUTPUT/EDC/2015/04-APR/DAY-28'
@@ -643,9 +588,6 @@ def prepareDirectory(strOutputDir):
 
 def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 
-	clusterNames = readClusterNames()
-	cNumbers = readClusterNumbers()
-
 	book = xlwt.Workbook()
 
 	# add new colour to palette and set RGB colour value
@@ -663,20 +605,20 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 	book.set_colour_RGB(0x26, 255,51,51)
 
 
-	sheet1 = book.add_sheet(clusterType, cell_overwrite_ok = True)
+	sheet1 = book.add_sheet('PERINGKAT ATM', cell_overwrite_ok = True)
 	sheet1.row(0).height_mismatch = True
 	sheet1.row(0).height = 360
 	styleTitle = 'pattern: pattern solid, fore_colour white;'
 	styleTitle += 'align: vertical center, horizontal center, wrap on;'
 	styleTitle += 'font: name Tahoma, height 280, bold 1;'
 
-	sheet1.write_merge(offRow, offRow, offCol, offCol+20, 'ATM PRO ' + RegionName + ' PER '+clusterType , xlwt.easyxf(styleTitle))
+	sheet1.write_merge(offRow, offRow, offCol, offCol+20, 'ATM PRO ' + RegionName , xlwt.easyxf(styleTitle))
 	shiftDown = 1
 
 	sheet1.row(1).height_mismatch = True
 	sheet1.row(1).height = 360
 	sheet1.write_merge(offRow+shiftDown, offRow+shiftDown, offCol, offCol+20, 'posisi tanggal ' +time.strftime("%d/%m/%Y-%H:%M") , xlwt.easyxf(styleTitle))
-	contentAlignmentHorz = ["center", "right", "center", "center", "center", "center", "center", "center", "center"]
+	contentAlignmentHorz = ["center", "right", "center", "center", "center", "center", "center", "center", "center" , "center"]
 
 
 	def styler(strColor,  fontHeight):
@@ -691,8 +633,7 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 
 	def makeHeader(xRow, yCol, jenisTabel):
 
-	
-		arrJudul = ["", "", "NOP", "RSK", "OPS", "OOS", "OFF", "OF6", "JML"]
+		arrJudul = ["CODE", "BRANCH", "NOP", "RSK", "OPS", "OOS", "OFF", "OF6", "POK" , "JML"]
 
 		sheet1.write_merge(xRow+2*shiftDown, xRow+2*shiftDown, yCol, yCol+len(arrJudul)-1, 'RANKING ' + jenisTabel, xlwt.easyxf(styler('sky_blue_10', 240)))
 
@@ -704,7 +645,7 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 	# TABULASI RANKING PROBLEM  ----------------------------------------------------
 	makeHeader(offRow, offCol, 'BY PROBLEM')
 	sheet1.col(offCol+0).width = 5*315
-	sheet1.col(offCol+1).width = 20*315
+	sheet1.col(offCol+1).width = 22*315
 	sheet1.col(offCol+2).width = 4*315
 	sheet1.col(offCol+3).width = 4*315
 	sheet1.col(offCol+4).width = 4*315
@@ -712,60 +653,28 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 	sheet1.col(offCol+6).width = 4*315
 	sheet1.col(offCol+7).width = 4*315
 	sheet1.col(offCol+8).width = 4*315
-	sheet1.col(offCol+9).width = 6*315
-
-	shiftDownSeparator = 0
-	headRow = []
+	sheet1.col(offCol+9).width = 4*315
+	sheet1.col(offCol+10).width = 6*315
 
 	for i in range (0, len(TProblem)):
-
-		if TProblem[i-1][9] != TProblem[i][9]:
-			separatorStyle = 'borders: top thin, bottom thin;'
-			separatorStyle += 'font: name Tahoma, height 180, bold 1;'
-			separatorStyle += 'pattern: pattern solid, fore_colour white;'
-			separatorStyle += 'align: horiz center'
-			shiftDownSeparator +=1
-			headRow.append(i+shiftDownSeparator+5)
-			sepStyle = xlwt.easyxf(separatorStyle)
-			r = i+offRow+4*shiftDown+shiftDownSeparator-1
-			c = offCol
-			sheet1.write(r, c, "", sepStyle)
-			print TProblem[i][9]
-			sheet1.write(r, c+1, TProblem[i][9].upper(), sepStyle)
-
-		for j in range(0,len(TProblem[i])-1):
+		#print len(TProblem[i])
+		for j in range(0,len(TProblem[i])):
 
 			strColor = colorProblem(TProblem[i][8])
 			contentStyle = 'font: name Tahoma, height 180;'
 			contentStyle += 'pattern: pattern solid, fore_colour '+strColor+';'
 			contentStyle += 'align: horiz '+contentAlignmentHorz[j]
 			style = xlwt.easyxf(contentStyle)
-			cellContent = TProblem[i][j]
-			if j == len(TProblem[i])-1:
-					cellContent = Formula("SUM(C"+str(i+shiftDownSeparator+5)+":H"+str(i+shiftDownSeparator+5)+")")
 
+			cellContent = TProblem[i][j]
 			if cellContent	== 0:
 				cellContent = '-'
 
-			sheet1.write(i+offRow+4*shiftDown+shiftDownSeparator, j+offCol, cellContent, style)
-			lastRow = i+offRow+4*shiftDown+shiftDownSeparator+3
+			sheet1.write(i+offRow+4*shiftDown, j+offCol, cellContent, style)
 
-	headRow.append(lastRow)
-	print headRow
-	# PROBLEM ----------------------------------------------------
-	for k in range (0, len(headRow)-1):
-		print k, headRow[k], len(headRow)
-		sheet1.write(headRow[k]-2, c+1, clusterNames[k].upper(), xlwt.easyxf(separatorStyle))		
-		sheet1.write(headRow[k]-2, c+2, Formula("SUM(C"+str(headRow[k])+":C"+str(headRow[k+1]-2)+")"), sepStyle)
-		sheet1.write(headRow[k]-2, c+3, Formula("SUM(D"+str(headRow[k])+":D"+str(headRow[k+1]-2)+")"), sepStyle)
-		sheet1.write(headRow[k]-2, c+4, Formula("SUM(E"+str(headRow[k])+":E"+str(headRow[k+1]-2)+")"), sepStyle)
-		sheet1.write(headRow[k]-2, c+5, Formula("SUM(F"+str(headRow[k])+":F"+str(headRow[k+1]-2)+")"), sepStyle)
-		sheet1.write(headRow[k]-2, c+6, Formula("SUM(G"+str(headRow[k])+":G"+str(headRow[k+1]-2)+")"), sepStyle)
-		sheet1.write(headRow[k]-2, c+7, Formula("SUM(H"+str(headRow[k])+":H"+str(headRow[k+1]-2)+")"), sepStyle)
-		sheet1.write(headRow[k]-2, c+8, Formula("SUM(I"+str(headRow[k])+":I"+str(headRow[k+1]-2)+")"), sepStyle)
+	# UTILITY ----------------------------------------------------
 
-
-	shiftLeft = 10
+	shiftLeft = 11
 
 	def makeHeader2(xRow, yCol, jenisTabel):
 
@@ -777,39 +686,21 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 
 			sheet1.write(xRow+3*shiftDown , i+yCol, arrJudul[i], xlwt.easyxf(styler('blue_classic', 180)))
 
-	makeHeader2(offRow, offCol+shiftLeft, "BY UTILITY")
 
-	# TABULASI RANKING UTILITY  ----------------------------------------------------
+
+	makeHeader2(offRow, offCol+shiftLeft, "BY UTILITY")
 	sheet1.col(offCol+shiftLeft-1).width = 2*315
 	sheet1.col(offCol+shiftLeft+0).width = 5*315
-	sheet1.col(offCol+shiftLeft+1).width = 20*315
+	sheet1.col(offCol+shiftLeft+1).width = 22*315
 	sheet1.col(offCol+shiftLeft+2).width = 6*315
-	sheet1.col(offCol+shiftLeft+3).width = 7*315
-	sheet1.col(offCol+shiftLeft+4).width = 5*315
-	sheet1.col(offCol+shiftLeft+5).width = 7*315
-
-	shiftDownSeparator = 0
-	headRow = []
-
+	sheet1.col(offCol+shiftLeft+3).width = 6*315
+	sheet1.col(offCol+shiftLeft+4).width = 6*315
+	sheet1.col(offCol+shiftLeft+5).width = 6*315
+	sheet1.col(offCol+shiftLeft+6).width = 6*315
 
 	for k in range (0, len(TUtility)):
 
-		if TUtility[k-1][6] != TUtility[k][6]:
-			separatorStyle = 'borders: top thin, bottom thin;'
-			separatorStyle += 'font: name Tahoma, height 180, bold 1;'
-			separatorStyle += 'pattern: pattern solid, fore_colour white;'
-			separatorStyle += 'align: horiz center'
-			shiftDownSeparator +=1
-			sepStyle = xlwt.easyxf(separatorStyle)
-			r = k+offRow+4*shiftDown+shiftDownSeparator-1
-			headRow.append(r+2)
-			c = offCol+shiftLeft
-			sheet1.write(r, shiftLeft, "", sepStyle)
-			sheet1.write(r, shiftLeft+1, TUtility[k][6].upper(), sepStyle)
-			sheet1.write(r, shiftLeft, "", sepStyle)
-			sheet1.write(r, shiftLeft, "", sepStyle)
-
-		for l in range(0,len(TUtility[k])-1):
+		for l in range(0,len(TUtility[k])):
 
 			strColor = colorUtility(TUtility[k][5])
 			contentStyle = 'font: name Tahoma, height 180;'
@@ -821,61 +712,17 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 				cellContent = '-'
 
 			style = xlwt.easyxf(contentStyle)
-			sheet1.write(k+offRow+4*shiftDown+shiftDownSeparator, l+offCol+shiftLeft, cellContent, style)
-			lastRow = k+offRow+4*shiftDown+shiftDownSeparator+3
-
-	headRow.append(lastRow)
-
-	# MATHEMATICAL CALCULATION ----------------------------------------------------
-
-	print "clusterNames", clusterNames
-	REGUP, REGTUNAI, REGUTIL = 0, 0, 0
-	for j in range(0, len(cNumbers)):
-		UP, TUNAI, NONTUNAI, PERCENT = 0, 0, 0, 0
-		for i in range(0,len(TUtility)):		
-			CNumber = TUtility[i][-1].upper()
-			if CNumber == cNumbers[j]:
-				UP += TUtility[i][2]
-				TUNAI += TUtility[i][3]
-				NONTUNAI += TUtility[i][4]
-		REGUP += UP
-		REGTUNAI += TUNAI
-		try:
-			PERCENT = float(TUNAI*100)/float(UP)
-		except:
-			PERCENT = 0.0
-		print clusterNames[j].upper(), UP, TUNAI, NONTUNAI, "{0:.4}".format(PERCENT)
-
-		sheet1.write(headRow[j]-2, shiftLeft+1, clusterNames[j].upper(), xlwt.easyxf(separatorStyle))		
-		sheet1.write(headRow[j]-2, shiftLeft+2, UP, xlwt.easyxf(separatorStyle))
-		sheet1.write(headRow[j]-2, shiftLeft+3, TUNAI, xlwt.easyxf(separatorStyle))
-		sheet1.write(headRow[j]-2, shiftLeft+4, NONTUNAI, xlwt.easyxf(separatorStyle))
-		sheet1.write(headRow[j]-2, shiftLeft+5, "{0:.4}".format(PERCENT), xlwt.easyxf(separatorStyle.replace('white',colorUtility(PERCENT)),num_format_str= '0.00'))
-
-	try:
-		REGUTIL = float(REGTUNAI*100)/float(REGUP)
-	except:
-		REGUTIL = 0.0
-	print "REG UTIL", REGUTIL, REGTUNAI
-	# UTILITY ----------------------------------------------------
-
-	#for k in range (0, len(headRow)-1):
-
-	#	sheet1.write(headRow[k]-2, shiftLeft+2, Formula("SUM(L"+str(headRow[k])+":L"+str(headRow[k+1]-2)+")"), sepStyle)
-	#	sheet1.write(headRow[k]-2, shiftLeft+3, Formula("SUM(M"+str(headRow[k])+":M"+str(headRow[k+1]-2)+")"), sepStyle)
-	#	sheet1.write(headRow[k]-2, shiftLeft+4, Formula("SUM(N"+str(headRow[k])+":N"+str(headRow[k+1]-2)+")"), sepStyle)
-	#	sheet1.write(headRow[k]-2, shiftLeft+5, Formula("(M"+str(headRow[k]-1)+"/L"+str(headRow[k]-1)+")*100"), xlwt.easyxf(separatorStyle,num_format_str= '0.00'))
-
+			sheet1.write(k+offRow+4*shiftDown, l+offCol+shiftLeft, cellContent, style)
 
 	# AVAILABILITY ----------------------------------------------------
 
-	shiftLeft = 17
+	shiftLeft = 18
 
 	def makeHeader3(xRow, yCol, jenisTabel):
 
 		sheet1.write_merge(xRow+2*shiftDown, xRow+2*shiftDown, yCol, yCol+3, 'RANKING ' + jenisTabel, xlwt.easyxf(styler('sky_blue_10', 240)))
 	
-		arrJudul = ["", "", "ATM", "%"]
+		arrJudul = ["CODE", "BRANCH", "ATM", "%"]
 
 		for i in range (0, len(arrJudul)):
 
@@ -884,34 +731,16 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 
 
 	makeHeader3(offRow, offCol+shiftLeft, "BY AVAILABILITY")
-	#print TAvailability
+	print TAvailability
 	sheet1.col(offCol+shiftLeft-1).width = 2*315
 	sheet1.col(offCol+shiftLeft+0).width = 5*315
-	sheet1.col(offCol+shiftLeft+1).width = 20*315
+	sheet1.col(offCol+shiftLeft+1).width = 22*315
 	sheet1.col(offCol+shiftLeft+2).width = 6*315
-	sheet1.col(offCol+shiftLeft+3).width = 7*315
-
-
-	shiftDownSeparator = 0
-	headRow = []
+	sheet1.col(offCol+shiftLeft+3).width = 9*315
 
 	for m in range (0, len(TAvailability)):
 
-		if TAvailability[m-1][4] != TAvailability[m][4]:
-			separatorStyle = 'borders: top thin, bottom thin;'
-			separatorStyle += 'font: name Tahoma, height 180, bold 1;'
-			separatorStyle += 'pattern: pattern solid, fore_colour white;'
-			separatorStyle += 'align: horiz center'
-			shiftDownSeparator +=1
-			sepStyle = xlwt.easyxf(separatorStyle)
-			r = m+offRow+4*shiftDown+shiftDownSeparator-1
-			c = offCol+shiftLeft
-			headRow.append(r+2)
-			sheet1.write(r, c, "", sepStyle)
-			sheet1.write(r, c+1, TAvailability[m][4].upper(), sepStyle)
-			tempSum = 0
-
-		for n in range(0,len(TAvailability[m])-1):
+		for n in range(0,len(TAvailability[m])):
 
 			strColor = colorAvail(TAvailability[m][3])
 			contentStyle = 'font: name Tahoma, height 180;'
@@ -919,98 +748,51 @@ def putDataXL(offRow, offCol, TProblem, TUtility, TAvailability):
 			contentStyle += 'align: horiz '+contentAlignmentHorz[n]
 
 			style = xlwt.easyxf(contentStyle)
-			sheet1.write(m+offRow+4*shiftDown+shiftDownSeparator, n+offCol+shiftLeft, TAvailability[m][n], style)
+			sheet1.write(m+offRow+4*shiftDown, n+offCol+shiftLeft, TAvailability[m][n], style)
 
-			strFormula = "PRODUCT(S" + str(m+offCol+shiftLeft+shiftDownSeparator-shiftLeft+5)+ ":T" +str(m+offCol+shiftLeft+shiftDownSeparator-shiftLeft+5)+")"
-			sheet1.write(m+offRow+4*shiftDown+shiftDownSeparator, shiftLeft+4, Formula(strFormula), xlwt.easyxf('font: color white;'))
-
-			lastRow = m+offRow+4*shiftDown+shiftDownSeparator+3
-
-	headRow.append(lastRow)
-
-	# MATHEMATICAL CALCULATION ----------------------------------------------------
-
-
-	REGATM, REGATMAVAIL, REGAVAIL = 0, 0, 0
-	for j in range(0, len(clusterNames)):
-		ATM, ATMAVAIL, PERCENT = 0, 0, 0
-		for i in range(0,len(TAvailability)):
-			CNumber = TAvailability[i][-1].upper()
-			if CNumber == cNumbers[j]:		
-				ATM += TAvailability[i][2]
-				ATMAVAIL += TAvailability[i][2]*TAvailability[i][3]
-		REGATM += ATM
-		REGATMAVAIL += ATMAVAIL
-
-		try:
-			PERCENT = float(ATMAVAIL)/float(ATM)
-		except:
-			PERCENT = 0.0
-		print clusterNames[j].upper(), ATM, "{0:.4}".format(PERCENT)
-		#TProblem.append((kodeCabang, namaCabang, NOP, RSK, PROBOPS, OOS, OFF, PROB, CName))
-		#TUtility.append((kodeCabang, namaCabang, UP, TUNAI, NONTUNAI, float("{0:.2}".format(PERCENT)),CName))
-		#TAvailability.append((kodeCabang, namaCabang, ATM, AVAIL, CName))
-		sheet1.write(headRow[j]-2, shiftLeft+1, clusterNames[j].upper(), xlwt.easyxf(separatorStyle))		
-		sheet1.write(headRow[j]-2, shiftLeft+2, ATM, sepStyle)
-		sheet1.write(headRow[j]-2, shiftLeft+3, PERCENT, xlwt.easyxf(separatorStyle.replace('white',colorUtility(PERCENT)),num_format_str= '0.00'))
-
-	try:
-		REGAVAIL = float(REGATMAVAIL)/float(REGATM)
-	except:
-		REGAVAIL = 0.0
-	print "REG AVAIL", REGAVAIL, REGATM
-	# AVAILABILITY ----------------------------------------------------
-	#for k in range (0, len(headRow)-1):
-
-	#	sheet1.write(headRow[k]-2, shiftLeft+2, Formula("SUM(S"+str(headRow[k])+":S"+str(headRow[k+1]-2)+")"), sepStyle)
-	#	sheet1.write(headRow[k]-2, shiftLeft+3, Formula("U"+str(headRow[k]-1)+"/S"+str(headRow[k]-1)), xlwt.easyxf(separatorStyle,num_format_str= '0.00'))
-	#	sheet1.write(headRow[k]-2, shiftLeft+4, Formula("SUM(U"+str(headRow[k])+":U"+str(headRow[k+1]-2)+")"), xlwt.easyxf('font: color white;') )
-
-	lastRow = headRow[-1]-1
 
 	style = xlwt.easyxf(styler('sky_blue_10', 240))
 	#TOTAL 1
-	arrJudul = ["", "", "NOP", "RSK", "OPS", "OOS", "OFF", "OF6","JML"]
-	for i in range (0, len(arrJudul)):
-		sheet1.write(lastRow-1 , i, arrJudul[i], xlwt.easyxf(styler('blue_classic', 180)))
-	shiftLeft = len(arrJudul)
+	sheet1.write(40, 0, '', style)	
+	sheet1.write(40, 1, 'TOTAL PROBLEM', style)
+	sheet1.write(40, 2, Formula("SUM(C5:C40)"), style)	
+	sheet1.write(40, 3, Formula("SUM(D5:D40)"), style)	
+	sheet1.write(40, 4, Formula("SUM(E5:E40)"), style)	
+	sheet1.write(40, 5, Formula("SUM(F5:F40)"), style)	
+	sheet1.write(40, 6, Formula("SUM(G5:G40)"), style)	
+	sheet1.write(40, 7, Formula("SUM(H5:H40)"), style)
+	sheet1.write(40, 8, Formula("SUM(I5:I40)"), style)
+	sheet1.write(40, 9, Formula("SUM(J5:J40)"), style)	
 	#TOTAL 2
-	arrJudul = ["", "", "UP", "TUNAI", "NON", "%"]
-	for i in range (0, len(arrJudul)):
-		sheet1.write(lastRow-1 , i+shiftLeft+1, arrJudul[i], xlwt.easyxf(styler('blue_classic', 180)))
-	shiftLeft += len(arrJudul)+1
-	#TOTAL 3
-	arrJudul = ["", "", "ATM", "%"]
-	for i in range (0, len(arrJudul)):
-		sheet1.write(lastRow-1 , i+shiftLeft+1, arrJudul[i], xlwt.easyxf(styler('blue_classic', 180)))
-
-	sheet1.write(lastRow, 0, '', style)	
-	sheet1.write(lastRow, 1, 'PROBLEM', style)
-	sheet1.write(lastRow, 2, Formula("SUM(C"+str(headRow[0]-1)+"+C"+str(headRow[1]-1)+"+C"+str(headRow[2]-1)+"+C"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 3, Formula("SUM(D"+str(headRow[0]-1)+"+D"+str(headRow[1]-1)+"+D"+str(headRow[2]-1)+"+D"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 4, Formula("SUM(E"+str(headRow[0]-1)+"+E"+str(headRow[1]-1)+"+E"+str(headRow[2]-1)+"+E"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 5, Formula("SUM(F"+str(headRow[0]-1)+"+F"+str(headRow[1]-1)+"+F"+str(headRow[2]-1)+"+F"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 6, Formula("SUM(G"+str(headRow[0]-1)+"+G"+str(headRow[1]-1)+"+G"+str(headRow[2]-1)+"+G"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 7, Formula("SUM(H"+str(headRow[0]-1)+"+H"+str(headRow[1]-1)+"+H"+str(headRow[2]-1)+"+H"+str(headRow[3]-1)+")"), style)
-	sheet1.write(lastRow, 8, Formula("SUM(I"+str(headRow[0]-1)+"+I"+str(headRow[1]-1)+"+I"+str(headRow[2]-1)+"+I"+str(headRow[3]-1)+")"), style)		
+	sheet1.write(40, 11, '', style)	
+	sheet1.write(40, 12, 'TOTAL', style)	
+	sheet1.write(40, 13, Formula("SUM(N5:N40)"), style)	
+	sheet1.write(40, 14, Formula("SUM(O5:O40)"), style)	
+	sheet1.write(40, 15, Formula("SUM(P5:P40)"), style)	
+	sheet1.write(40, 16, Formula("O41/N41*100"), style)	
 	#TOTAL 2
-	sheet1.write(lastRow, 10, '', style)	
-	sheet1.write(lastRow, 11, 'UTILITY', style)	
-	sheet1.write(lastRow, 12, Formula("SUM(M"+str(headRow[0]-1)+"+M"+str(headRow[1]-1)+"+M"+str(headRow[2]-1)+"+M"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 13, Formula("SUM(N"+str(headRow[0]-1)+"+N"+str(headRow[1]-1)+"+N"+str(headRow[2]-1)+"+N"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 14, Formula("SUM(O"+str(headRow[0]-1)+"+O"+str(headRow[1]-1)+"+O"+str(headRow[2]-1)+"+O"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 15, REGUTIL, xlwt.easyxf(styler(colorAvail(REGAVAIL), 240), num_format_str= '0.00'))
-	#TOTAL 2
-	sheet1.write(lastRow, 17, '', style)
-	sheet1.write(lastRow, 18, 'AVAILABILITY', style)	
-	sheet1.write(lastRow, 19, Formula("SUM(T"+str(headRow[0]-1)+"+T"+str(headRow[1]-1)+"+T"+str(headRow[2]-1)+"+T"+str(headRow[3]-1)+")"), style)	
-	sheet1.write(lastRow, 20, REGAVAIL, xlwt.easyxf(styler(colorAvail(REGAVAIL), 240), num_format_str= '0.00'))
+	sheet1.write(40, 18, '', style)
+	sheet1.write(40, 19, 'TOTAL', style)	
+	sheet1.write(40, 20, Formula("SUM(U5:U40)"), style)	
+	sheet1.write(40, 21, Formula("U41"), style)	
 
-	sheet1.write_merge(lastRow+1, lastRow+1, offCol, offCol+20, 'TARGET UTILITY & AVAILABILITY = 99%' , xlwt.easyxf(styleTitle + 'borders: top thin, bottom thin;'))
 
-	namaFileXLS = prepareDirectory("OUTPUT") + "ATM "+clusterType+"-" + RegionName +time.strftime("-%Y%m%d-%H")+'.xls'
+	for i in range(5, 41):
+
+		strFormula = "PRODUCT(U" + str(i)+ ":V"+str(i)+")"
+		sheet1.write(i-1, 22, Formula(strFormula), xlwt.easyxf('font: color white;'))
+
+	style = xlwt.easyxf(styler('sky_blue_10', 240), num_format_str= '0.00')
+	sheet1.write(40, 21, Formula("SUM(W5:W40)/U41"), style )
+
+	lastRow = 41
+
+	sheet1.write_merge(lastRow, lastRow, offCol, offCol+22, 'TARGET UTILITY & AVAILABILITY = 99%' , xlwt.easyxf(styleTitle + 'borders: top thin, bottom thin;'))
+
+	namaFileXLS = prepareDirectory("OUTPUT") + "ATM ALL-" + RegionName +time.strftime("-%Y%m%d-%H")+'.xls'
 
 	book.save(namaFileXLS)
+
 
 	
 def main():
