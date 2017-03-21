@@ -7,6 +7,7 @@
 # 14.09.2016 penambahan OFF di atas 6 jam
 # 10.12.2016 geser dari 26 ke 29
 # 20.01.2017 geser dari 29 ke 30
+# 21.03.2017 geser semua 1 kolom
 #---------------------------------------
 # usage: python ATMCluster.py
 #---------------------------------------
@@ -424,21 +425,21 @@ def getTableContents(table):
 		dText = tdcells[2].getText()
 		namaCabang = cleanupNamaUker(dText.upper())
 		#---------------------------------------
-		textUP = tdcells[10].getText()
+		textUP = tdcells[11].getText()
 		if (textUP) != '':
-			UP = int(tdcells[10].getText()) 
+			UP = int(tdcells[11].getText()) 
 		else:			
 			UP = 0
 		#---------------------------------------
-		textTunai = tdcells[11].getText()
+		textTunai = tdcells[12].getText()
 		if (textTunai) != '':
-			TUNAI = int(tdcells[11].getText()) 
+			TUNAI = int(tdcells[12].getText()) 
 		else:			
 			TUNAI = 0
 		#---------------------------------------
-		textNonTunai = tdcells[12].getText()
+		textNonTunai = tdcells[13].getText()
 		if (textNonTunai) != '':
-			NONTUNAI = int(tdcells[12].getText()) 
+			NONTUNAI = int(tdcells[13].getText()) 
 		else:			
 			NONTUNAI = 0
 		#---------------------------------------
@@ -468,9 +469,9 @@ def getTableContents(table):
 		else:			
 			ATM = 0
 		#---------------------------------------
-		textAvail = tdcells[35].getText()
+		textAvail = tdcells[36].getText()
 		if (textAvail) != '':
-			AVAIL = float(tdcells[35].getText()) 
+			AVAIL = float(tdcells[36].getText()) 
 		else:			
 			AVAIL = 0
 		#---------------------------------------
