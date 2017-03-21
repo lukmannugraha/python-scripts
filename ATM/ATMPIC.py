@@ -7,7 +7,6 @@
 # 14.09.2016 penambahan OFF di atas 6 jam
 # 10.12.2016 geser dari 26 ke 29
 # 20.01.2017 geser dari 29 ke 30
-# 21.03.2017 geser semua 1 kolom
 #---------------------------------------
 # usage: python ATMCluster.py
 #---------------------------------------
@@ -346,62 +345,62 @@ def getTableContents(table):
 		dText = tdcells[2].getText()
 		namaCabang = cleanupNamaUker(dText.upper())
 		#---------------------------------------
-		textNOPG = tdcells[5].getText()
+		textNOPG = tdcells[6].getText()
 		if textNOPG:
-			NOPG = int(tdcells[5].getText()) 
+			NOPG = int(tdcells[6].getText()) 
 		else:			
 			NOPG = 0
 			#print "NOPG NIHIL"
 		#---------------------------------------
-		textNOPNG = tdcells[6].getText()
+		textNOPNG = tdcells[7].getText()
 		if textNOPNG:
-			NOPNG = int(tdcells[6].getText()) 
+			NOPNG = int(tdcells[7].getText()) 
 		else:
 			NOPNG = 0
 			#print "NOPNG NIHIL"
 		#---------------------------------------
 		NOP = NOPG + NOPNG
 		#---------------------------------------
-		textRSKG = tdcells[7].getText()
+		textRSKG = tdcells[8].getText()
 		if textRSKG:
-			RSKG = int(tdcells[7].getText()) 
+			RSKG = int(tdcells[8].getText()) 
 		else:			
 			RSKG = 0
 			#print "RSKG NIHIL"
 		#---------------------------------------
-		textRSKNG = tdcells[7].getText()
+		textRSKNG = tdcells[9].getText()
 		if textRSKNG:
-			RSKNG = int(tdcells[7].getText()) 
+			RSKNG = int(tdcells[9].getText()) 
 		else:			
 			RSKNG = 0
 			#print "RSKNG NIHIL"
 		#---------------------------------------
 		RSK = RSKG + RSKNG
 		#---------------------------------------
-		textPROBOPS = tdcells[9].getText()
+		textPROBOPS = tdcells[10].getText()
 		if textPROBOPS:
-			PROBOPS = int(tdcells[9].getText()) 
+			PROBOPS = int(tdcells[10].getText()) 
 		else:			
 			PROBOPS = 0
 			#print "PROBOPS NIHIL"
 		#---------------------------------------
-		textOOS= tdcells[13].getText()
+		textOOS= tdcells[14].getText()
 		if textOOS:
-			OOS = int(tdcells[13].getText()) 
+			OOS = int(tdcells[14].getText()) 
 		else:			
 			OOS = 0
 			#print "OOS NIHIL"
 		#---------------------------------------
-		textOFF = tdcells[14].getText()
+		textOFF = tdcells[15].getText()
 		if textOFF:
-			OFF = int(tdcells[14].getText()) 
+			OFF = int(tdcells[15].getText()) 
 		else:			
 			OFF = 0
 			#print "OFF NIHIL"
 		#---------------------------------------
-		textOF6 = tdcells[15].getText()
+		textOF6 = tdcells[16].getText()
 		if textOF6:
-			OF6 = int(tdcells[15].getText()) 
+			OF6 = int(tdcells[16].getText()) 
 		else:			
 			OF6 = 0
 			#print "OFF NIHIL"
